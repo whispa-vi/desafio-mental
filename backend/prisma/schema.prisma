@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum GameStatus {
+  COMPLETADA
+  ABANDONADA
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  games     Game[]
+}
+
+model Question {
+  id           String       @id @default(uuid())
+  category     String
+  statement    String
+  options      Json         
+  correctIndex Int          
+  points       Int
+  active       Boolean      @default(true)
+  answers      GameAnswer[]
+}
+
+model Game {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  category       String
+  totalQuestions Int          
+  score          Int          @default(0)
+  correct        Int          @default(0)
+  wrong          Int          @default(0)
+  bestStreak     Int          @default(0)
+  currentStreak  Int          @default(0)
+  durationSec    Int          @default(0)
+  status         GameStatus?  
+  startedAt      DateTime     @default(now())
+  finishedAt     DateTime?
+  answers        GameAnswer[]
+}
+
+model GameAnswer {
+  id            String   @id @default(uuid())
+  gameId        String
+  game          Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id])
+  order         Int      
+  selectedIndex Int?     
+  isCorrect     Boolean? 
+  points        Int       @default(0)
+  shownAt       DateTime?
+  answeredAt    DateTime?
+
+  @@unique([gameId, questionId]) 
+}

@@ -1,0 +1,2699 @@
+{
+  "info": {
+    "name": "Desafío Mental — API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Проверка бэкенда Desafío Mental (Parcial II).\n\nПеред запуском: в папке backend выполнить `npm run dev` (сервер на http://localhost:3000).\n\nПеред запуском импортировать файл окружения desafio_mental.postman_environment.json и выбрать окружение «Desafío Mental — local» (справа вверху в Postman). В нём baseUrl и переменные для токенов.\n\nЗапросы выполнять по порядку сверху вниз: вход сохраняет токены в окружение (userToken, adminToken), а следующие запросы их используют.\n\nПовторный запуск: запрос «1.1 Регистрация» вернёт 409, потому что пользователь vicky уже создан. Чтобы начать с чистой базы: `npm run db:reset` в папке backend."
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "item": [
+    {
+      "name": "0. Сервер",
+      "description": "Сервер запущен и отвечает.",
+      "item": [
+        {
+          "name": "0.1 Сервер работает",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Сообщение: API Desafío Mental funcionando\", function () { pm.expect(pm.response.json().message).to.eql(\"API Desafío Mental funcionando\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api"
+              ]
+            },
+            "description": "Проверочный маршрут из server.js. Если ответа нет — сервер не запущен (npm run dev в папке backend)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Регистрация",
+      "description": "POST /api/auth/register — правила регистрации из первого парсиаля.",
+      "item": [
+        {
+          "name": "1.1 Регистрация (успешно)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Роль USER, а не ADMIN\", function () { pm.expect(pm.response.json().role).to.eql(\"USER\"); });",
+                  "pm.test(\"В ответе нет пароля\", function () { pm.expect(pm.response.json()).to.not.have.property(\"password\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Создаёт пользователя vicky. В теле специально есть \"role\": \"ADMIN\" — сервер должен его отбросить и создать обычного USER (публичная регистрация не создаёт админов). Ответ 201 — без пароля.\n\nПри повторном запуске будет 409 (vicky уже есть) — это нормально.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"vicky\",\n  \"email\": \"vicky@mail.com\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.2 Имя уже занято",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"Сообщение: El nombre de usuario ya está registrado\", function () { pm.expect(pm.response.json().message).to.eql(\"El nombre de usuario ya está registrado\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "То же имя vicky, другой email → 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"vicky\",\n  \"email\": \"otro@mail.com\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.3 Email уже занят",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"Сообщение: El email ya está registrado\", function () { pm.expect(pm.response.json().message).to.eql(\"El email ya está registrado\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Другое имя, email vicky@mail.com → 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"otro1\",\n  \"email\": \"vicky@mail.com\",\n  \"password\": \"12345678\",\n  \"confirmPassword\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.4 Неверные данные",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"4 ошибки — по одной на поле\", function () { pm.expect(pm.response.json().errors).to.have.lengthOf(4); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Все 4 поля нарушают правила: имя короче 4, email без @, пароль короче 8, подтверждение не совпадает → 400 и 4 ошибки в массиве errors (по одной на поле).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"ab\",\n  \"email\": \"mal\",\n  \"password\": \"123\",\n  \"confirmPassword\": \"999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "1.5 Пустое тело",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Тело запроса не отправлено → 400, все поля обязательны."
+          }
+        },
+        {
+          "name": "1.6 Сломанный JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Сообщение: El cuerpo de la petición no es un JSON válido\", function () { pm.expect(pm.response.json().message).to.eql(\"El cuerpo de la petición no es un JSON válido\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Тело — не JSON → 400 с понятным сообщением, а не 500.",
+            "body": {
+              "mode": "raw",
+              "raw": "{bad",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Вход",
+      "description": "POST /api/auth/login — вход по имени пользователя. Успешный вход сохраняет токен в переменную коллекции.",
+      "item": [
+        {
+          "name": "2.1 Неверный пароль",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Сообщение: Usuario o contraseña incorrectos\", function () { pm.expect(pm.response.json().message).to.eql(\"Usuario o contraseña incorrectos\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Существующее имя, неверный пароль → 401.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"vicky\",\n  \"password\": \"xxxxxxxx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2.2 Несуществующий пользователь",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Сообщение: Usuario o contraseña incorrectos\", function () { pm.expect(pm.response.json().message).to.eql(\"Usuario o contraseña incorrectos\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Сообщение то же, что при неверном пароле: сервер не подсказывает, какие имена существуют.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"nadie\",\n  \"password\": \"xxxxxxxx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2.3 Вход vicky (USER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.environment.set(\"userToken\", pm.response.json().token);",
+                  "pm.test(\"Токен сохранён в окружение: userToken\", function () { pm.expect(pm.environment.get(\"userToken\")).to.be.a(\"string\").and.not.empty; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Успешный вход → 200, { token, user }. Токен автоматически сохраняется в окружение (userToken).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"vicky\",\n  \"password\": \"12345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2.4 Вход admin (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Роль ADMIN\", function () { pm.expect(pm.response.json().user.role).to.eql(\"ADMIN\"); });",
+                  "pm.environment.set(\"adminToken\", pm.response.json().token);",
+                  "pm.test(\"Токен сохранён в окружение: adminToken\", function () { pm.expect(pm.environment.get(\"adminToken\")).to.be.a(\"string\").and.not.empty; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Администратор из seed (admin / Admin1234). Токен сохраняется в окружение (adminToken).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Профиль",
+      "description": "GET /api/auth/profile — защищён middleware authenticate.",
+      "item": [
+        {
+          "name": "3.1 Без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Сообщение: No autenticado\", function () { pm.expect(pm.response.json().message).to.eql(\"No autenticado\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Заголовка Authorization нет → 401.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "3.2 Поддельный токен",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Сообщение: Token inválido o vencido\", function () { pm.expect(pm.response.json().message).to.eql(\"Token inválido o vencido\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Токен не подписан нашим JWT_SECRET → 401.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "abc.def.ghi",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.3 С токеном vicky",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"В ответе нет пароля\", function () { pm.expect(pm.response.json()).to.not.have.property(\"password\"); });",
+                  "pm.test(\"Это vicky\", function () { pm.expect(pm.response.json().username).to.eql(\"vicky\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Токен из запроса 2.3 (вкладка Authorization → Bearer Token → {{userToken}}) → 200, данные пользователя без пароля. Этим запросом фронтенд будет восстанавливать сессию.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Роли",
+      "description": "GET /api/users — authenticate + authorize(Role.ADMIN).",
+      "item": [
+        {
+          "name": "4.1 Список пользователей как USER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 403\", function () { pm.response.to.have.status(403); });",
+                  "pm.test(\"Сообщение: No tenés permiso para esta operación\", function () { pm.expect(pm.response.json().message).to.eql(\"No tenés permiso para esta operación\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Пользователь вошёл, но он не ADMIN → 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.2 Список пользователей как ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Список, без паролей\", function () { const u = pm.response.json(); pm.expect(u).to.be.an(\"array\").that.is.not.empty; u.forEach(x => pm.expect(x).to.not.have.property(\"password\")); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            },
+            "description": "Администратор → 200, список пользователей без паролей.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Ошибки",
+      "description": "Единый формат ошибок.",
+      "item": [
+        {
+          "name": "5.1 Неизвестный маршрут",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Сообщение: Ruta no encontrada: GET /api/nada\", function () { pm.expect(pm.response.json().message).to.eql(\"Ruta no encontrada: GET /api/nada\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nada",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "nada"
+              ]
+            },
+            "description": "Такого маршрута нет → 404 { message }."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Вопросы",
+      "description": "/api/questions — банк вопросов. Категории — для любого вошедшего пользователя; всё остальное — только ADMIN. Перед этой папкой нужно выполнить папку 2 (вход), чтобы были userToken и adminToken.",
+      "item": [
+        {
+          "name": "6.1 Категории без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Сообщение: No autenticado\", function () { pm.expect(pm.response.json().message).to.eql(\"No autenticado\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "categories"
+              ]
+            },
+            "description": "Без входа → 401.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "6.2 Категории как USER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Есть категории с количеством\", function () { const c = pm.response.json(); pm.expect(c).to.be.an(\"array\").that.is.not.empty; pm.expect(c[0]).to.have.keys(\"category\", \"count\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "categories"
+              ]
+            },
+            "description": "Любой вошедший пользователь → 200, список { category, count }. Этим запросом экран «Новая партия» покажет категории и сколько в них вопросов.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.3 Список вопросов как USER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 403\", function () { pm.response.to.have.status(403); });",
+                  "pm.test(\"Сообщение: No tenés permiso para esta operación\", function () { pm.expect(pm.response.json().message).to.eql(\"No tenés permiso para esta operación\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions"
+              ]
+            },
+            "description": "Полный банк с правильными ответами — только для ADMIN. USER → 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.4 Список вопросов как ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Список вопросов\", function () { pm.expect(pm.response.json()).to.be.an(\"array\").that.is.not.empty; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions"
+              ]
+            },
+            "description": "ADMIN → 200, все активные вопросы (после seed — 25).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.5 Фильтр по категории",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Все вопросы из категории Asincronia\", function () { const q = pm.response.json(); pm.expect(q).to.not.be.empty; q.forEach(x => pm.expect(x.category).to.eql(\"Asincronia\")); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions?category=Asincronia",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Asincronia"
+                }
+              ]
+            },
+            "description": "Параметр ?category= → только вопросы этой категории (Asincronia — 10).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.6 Один вопрос",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Это js-01 с 4 вариантами\", function () { const q = pm.response.json(); pm.expect(q.id).to.eql(\"js-01\"); pm.expect(q.options).to.have.lengthOf(4); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/js-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "js-01"
+              ]
+            },
+            "description": "Вопрос из seed по id → 200.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.7 Несуществующий вопрос",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Сообщение: Pregunta no encontrada\", function () { pm.expect(pm.response.json().message).to.eql(\"Pregunta no encontrada\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/no-existe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "no-existe"
+              ]
+            },
+            "description": "Такого id нет → 404.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.8 Создать: неверные данные",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Есть ошибки по полям\", function () { pm.expect(pm.response.json().errors.length).to.be.above(3); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions"
+              ]
+            },
+            "description": "Пустая категория, короткий текст, 3 варианта с повтором, correctIndex 5, очки 0 → 400 со списком ошибок.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"\",\n  \"statement\": \"abc\",\n  \"options\": [\n    \"a\",\n    \"a\",\n    \"b\"\n  ],\n  \"correctIndex\": 5,\n  \"points\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.9 Создать как USER",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions"
+              ]
+            },
+            "description": "USER не может создавать вопросы → 403.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Node\",\n  \"statement\": \"¿Qué es npm?\",\n  \"options\": [\n    \"Gestor de paquetes\",\n    \"Base de datos\",\n    \"Navegador\",\n    \"Editor\"\n  ],\n  \"correctIndex\": 0,\n  \"points\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.10 Создать как ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Создан с новым id и active = true\", function () { const q = pm.response.json(); pm.expect(q.id).to.not.eql(\"hack\"); pm.expect(q.active).to.eql(true); pm.expect(q.statement).to.eql(\"¿Qué es npm?\"); });",
+                  "pm.environment.set(\"questionId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions"
+              ]
+            },
+            "description": "ADMIN → 201, новый вопрос с id. Поля active и id в теле специально — сервер их отбрасывает. id сохраняется в окружение (questionId) для следующих запросов.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Node\",\n  \"statement\": \"¿Qué es npm?\",\n  \"options\": [\n    \"Gestor de paquetes\",\n    \"Base de datos\",\n    \"Navegador\",\n    \"Editor\"\n  ],\n  \"correctIndex\": 0,\n  \"points\": 10,\n  \"active\": false,\n  \"id\": \"hack\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.11 Категория Node появилась",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Есть Node\", function () { pm.expect(pm.response.json().map(c => c.category)).to.include(\"Node\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "categories"
+              ]
+            },
+            "description": "Новая категория из 6.10 видна в списке категорий.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.12 Изменить (PUT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Очки = 20\", function () { pm.expect(pm.response.json().points).to.eql(20); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/{{questionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "{{questionId}}"
+              ]
+            },
+            "description": "Можно прислать только изменённые поля → 200, вопрос с новыми очками.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.13 Изменить: пустое тело",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Сообщение про пустое изменение\", function () { pm.expect(pm.response.json().errors[0].message).to.eql(\"Enviá al menos un campo para modificar\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/{{questionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "{{questionId}}"
+              ]
+            },
+            "description": "Нечего менять → 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.14 Удалить",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Сообщение: Pregunta eliminada\", function () { pm.expect(pm.response.json().message).to.eql(\"Pregunta eliminada\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/{{questionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "{{questionId}}"
+              ]
+            },
+            "description": "Мягкое удаление: вопрос скрывается (active = false), но остаётся в базе для истории партий → 200.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.15 Удалённый вопрос не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Сообщение: Pregunta no encontrada\", function () { pm.expect(pm.response.json().message).to.eql(\"Pregunta no encontrada\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/{{questionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "{{questionId}}"
+              ]
+            },
+            "description": "После удаления вопрос не отдаётся → 404.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.16 Категория Node исчезла",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Node нет\", function () { pm.expect(pm.response.json().map(c => c.category)).to.not.include(\"Node\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/questions/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "questions",
+                "categories"
+              ]
+            },
+            "description": "В Node был один вопрос, он удалён — категории больше нет в списке.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Партии",
+      "description": "/api/games — игра. Только для вошедших; каждый видит только свои партии. Сначала выполнить папку 2 (вход). Ответы — по порядку 7.7 → 7.11: каждый ответ сохраняет id следующего вопроса в окружение (currentQuestionId).",
+      "item": [
+        {
+          "name": "7.1 Начать без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games"
+              ]
+            },
+            "description": "Без входа → 401.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Arrays y objetos\",\n  \"amount\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "7.2 Неверное количество",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 400\", function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games"
+              ]
+            },
+            "description": "Можно только 5 или 10 вопросов (правило P1) → 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Arrays y objetos\",\n  \"amount\": 7\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.3 Недостаточно вопросов",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"Сообщение про нехватку вопросов\", function () { pm.expect(pm.response.json().message).to.include(\"No hay suficientes preguntas\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games"
+              ]
+            },
+            "description": "В «DOM y navegador» 5 вопросов, а просим 10 → 409, партия не начинается (правило P1).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"DOM y navegador\",\n  \"amount\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.4 Начать партию",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Первый вопрос без correctIndex\", function () { const q = pm.response.json().question; pm.expect(q.order).to.eql(1); pm.expect(q.seconds).to.eql(15); pm.expect(q.options).to.have.lengthOf(4); pm.expect(q).to.not.have.property(\"correctIndex\"); });",
+                  "const b = pm.response.json(); pm.environment.set(\"gameId\", b.id); pm.environment.set(\"currentQuestionId\", b.question.questionId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games"
+              ]
+            },
+            "description": "201: партия создана, в ответе первый вопрос БЕЗ правильного ответа, 15 секунд. id партии и вопроса сохраняются в окружение (gameId, currentQuestionId).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Arrays y objetos\",\n  \"amount\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.5 Результат во время игры",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"Сообщение: La partida todavía está en curso\", function () { pm.expect(pm.response.json().message).to.eql(\"La partida todavía está en curso\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}"
+              ]
+            },
+            "description": "Партия ещё идёт → 409: результат (с правильными ответами) только после окончания.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.6 Ответ не на тот вопрос",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"Сообщение: Esa no es la pregunta actual de la partida\", function () { pm.expect(pm.response.json().message).to.eql(\"Esa no es la pregunta actual de la partida\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}",
+                "answers"
+              ]
+            },
+            "description": "Ответить можно только на текущий вопрос → 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"no-existe\",\n  \"selectedIndex\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.7 Ответ 1 (вариант 0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"В ответе есть правильный вариант (0–3)\", function () { const b = pm.response.json(); pm.expect(b.correctIndex).to.be.within(0, 3); });",
+                  "pm.test(\"isCorrect совпадает с проверкой (0 === correctIndex)\", function () { const b = pm.response.json(); pm.expect(b.isCorrect).to.eql(b.correctIndex === 0); });",
+                  "pm.test(\"Следующий вопрос без правильного ответа\", function () { const n = pm.response.json().next; pm.expect(n).to.be.an(\"object\"); pm.expect(n).to.not.have.property(\"correctIndex\"); });",
+                  "const b = pm.response.json(); if (b.next) { pm.environment.set(\"currentQuestionId\", b.next.questionId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}",
+                "answers"
+              ]
+            },
+            "description": "Сервер сам проверяет ответ и возвращает: верно ли, правильный вариант, очки, серию и следующий вопрос.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentQuestionId}}\",\n  \"selectedIndex\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.8 Ответ 2 (время вышло)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"В ответе есть правильный вариант (0–3)\", function () { const b = pm.response.json(); pm.expect(b.correctIndex).to.be.within(0, 3); });",
+                  "pm.test(\"Время вышло: ответ неверный, timedOut = true\", function () { const b = pm.response.json(); pm.expect(b.timedOut).to.eql(true); pm.expect(b.isCorrect).to.eql(false); pm.expect(b.currentStreak).to.eql(0); });",
+                  "pm.test(\"Следующий вопрос без правильного ответа\", function () { const n = pm.response.json().next; pm.expect(n).to.be.an(\"object\"); pm.expect(n).to.not.have.property(\"correctIndex\"); });",
+                  "const b = pm.response.json(); if (b.next) { pm.environment.set(\"currentQuestionId\", b.next.questionId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}",
+                "answers"
+              ]
+            },
+            "description": "selectedIndex: null — так фронтенд сообщает, что 15 секунд прошли. Ответ неверный, серия сбрасывается (правило P1).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentQuestionId}}\",\n  \"selectedIndex\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.9 Ответ 3 (вариант 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"В ответе есть правильный вариант (0–3)\", function () { const b = pm.response.json(); pm.expect(b.correctIndex).to.be.within(0, 3); });",
+                  "pm.test(\"isCorrect совпадает с проверкой (1 === correctIndex)\", function () { const b = pm.response.json(); pm.expect(b.isCorrect).to.eql(b.correctIndex === 1); });",
+                  "pm.test(\"Следующий вопрос без правильного ответа\", function () { const n = pm.response.json().next; pm.expect(n).to.be.an(\"object\"); pm.expect(n).to.not.have.property(\"correctIndex\"); });",
+                  "const b = pm.response.json(); if (b.next) { pm.environment.set(\"currentQuestionId\", b.next.questionId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}",
+                "answers"
+              ]
+            },
+            "description": "Обычный ответ.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentQuestionId}}\",\n  \"selectedIndex\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.10 Ответ 4 (вариант 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"В ответе есть правильный вариант (0–3)\", function () { const b = pm.response.json(); pm.expect(b.correctIndex).to.be.within(0, 3); });",
+                  "pm.test(\"isCorrect совпадает с проверкой (2 === correctIndex)\", function () { const b = pm.response.json(); pm.expect(b.isCorrect).to.eql(b.correctIndex === 2); });",
+                  "pm.test(\"Следующий вопрос без правильного ответа\", function () { const n = pm.response.json().next; pm.expect(n).to.be.an(\"object\"); pm.expect(n).to.not.have.property(\"correctIndex\"); });",
+                  "const b = pm.response.json(); if (b.next) { pm.environment.set(\"currentQuestionId\", b.next.questionId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}",
+                "answers"
+              ]
+            },
+            "description": "Обычный ответ.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentQuestionId}}\",\n  \"selectedIndex\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.11 Ответ 5 (вариант 3)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"В ответе есть правильный вариант (0–3)\", function () { const b = pm.response.json(); pm.expect(b.correctIndex).to.be.within(0, 3); });",
+                  "pm.test(\"isCorrect совпадает с проверкой (3 === correctIndex)\", function () { const b = pm.response.json(); pm.expect(b.isCorrect).to.eql(b.correctIndex === 3); });",
+                  "pm.test(\"Партия завершена\", function () { const b = pm.response.json(); pm.expect(b.finished).to.eql(true); pm.expect(b.next).to.eql(null); });",
+                  "const b = pm.response.json(); if (b.next) { pm.environment.set(\"currentQuestionId\", b.next.questionId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}",
+                "answers"
+              ]
+            },
+            "description": "Последний вопрос: сервер завершает партию (статус completada), next = null.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentQuestionId}}\",\n  \"selectedIndex\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.12 Ответ после завершения",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"Сообщение: La partida ya terminó\", function () { pm.expect(pm.response.json().message).to.eql(\"La partida ya terminó\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}/answers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}",
+                "answers"
+              ]
+            },
+            "description": "Партия закончена → 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{currentQuestionId}}\",\n  \"selectedIndex\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.13 Результат партии",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Процент и сообщение по правилам P1\", function () { const b = pm.response.json(); pm.expect(b.status).to.eql(\"completada\"); pm.expect(b.correct + b.wrong).to.eql(5); pm.expect(b.percentage).to.eql(Math.floor(b.correct * 100 / 5)); const m = b.percentage < 40 ? \"Necesitás seguir practicando\" : b.percentage < 70 ? \"Vas por buen camino\" : b.percentage < 100 ? \"¡Excelente desempeño!\" : \"¡Partida perfecta!\"; pm.expect(b.message).to.eql(m); pm.expect(b.answers).to.have.lengthOf(5); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}"
+              ]
+            },
+            "description": "Экран «Результаты»: очки, правильные/неправильные, процент от всех вопросов, сообщение по проценту, лучшая серия, длительность, дата, разбор ответов.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.14 Чужая партия",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Сообщение: Partida no encontrada\", function () { pm.expect(pm.response.json().message).to.eql(\"Partida no encontrada\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{gameId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{gameId}}"
+              ]
+            },
+            "description": "Админ открывает партию vicky → 404: чужие партии не видны (и не раскрывается, что такая есть).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.15 Новая партия (для выхода)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.environment.set(\"abandonGameId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/games",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games"
+              ]
+            },
+            "description": "Ещё одна партия, чтобы проверить выход из неё.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Asincronia\",\n  \"amount\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.16 Выйти из партии",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Статус abandonada\", function () { pm.expect(pm.response.json().status).to.eql(\"abandonada\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{abandonGameId}}/abandon",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{abandonGameId}}",
+                "abandon"
+              ]
+            },
+            "description": "Кнопка «Salir» после подтверждения → партия записывается как abandonada (правило P1).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.17 Выйти ещё раз",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 409\", function () { pm.response.to.have.status(409); });",
+                  "pm.test(\"Сообщение: La partida ya terminó\", function () { pm.expect(pm.response.json().message).to.eql(\"La partida ya terminó\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/{{abandonGameId}}/abandon",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "{{abandonGameId}}",
+                "abandon"
+              ]
+            },
+            "description": "Уже закончена → 409.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. История, статистика, рейтинг",
+      "description": "Данные считаются по сыгранным партиям. Выполнять после папки 7.",
+      "item": [
+        {
+          "name": "8.1 История",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Сводка и список\", function () { const b = pm.response.json(); pm.expect(b.summary).to.have.keys(\"completed\", \"abandoned\", \"score\"); pm.expect(b.summary.completed).to.be.at.least(1); pm.expect(b.summary.abandoned).to.be.at.least(1); pm.expect(b.games.length).to.eql(b.summary.completed + b.summary.abandoned); });",
+                  "pm.test(\"От новых к старым\", function () { const g = pm.response.json().games; for (let i = 1; i < g.length; i++) pm.expect(new Date(g[i-1].finishedAt) >= new Date(g[i].finishedAt)).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "history"
+              ]
+            },
+            "description": "Партии пользователя от новых к старым + сводка (рекурсия из P1): сколько завершено, сколько прервано, сумма очков завершённых.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.2 История: только завершённые",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Все completada\", function () { pm.response.json().games.forEach(g => pm.expect(g.status).to.eql(\"completada\")); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/history?status=completada",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completada"
+                }
+              ]
+            },
+            "description": "Фильтр по статусу.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.3 История: прерванные в Asincronia",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Все abandonada и Asincronia\", function () { const g = pm.response.json().games; pm.expect(g).to.not.be.empty; g.forEach(x => { pm.expect(x.status).to.eql(\"abandonada\"); pm.expect(x.category).to.eql(\"Asincronia\"); }); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/history?status=abandonada&category=Asincronia",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "abandonada"
+                },
+                {
+                  "key": "category",
+                  "value": "Asincronia"
+                }
+              ]
+            },
+            "description": "Два фильтра сразу.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.4 История: неверный статус",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 400\", function () { pm.response.to.have.status(400); });",
+                  "pm.test(\"Сообщение: El estado debe ser completada o abandonada\", function () { pm.expect(pm.response.json().message).to.eql(\"El estado debe ser completada o abandonada\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/games/history?status=xx",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "games",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "xx"
+                }
+              ]
+            },
+            "description": "Статус только completada или abandonada → 400.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.5 Статистика меню",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Поля статистики\", function () { const b = pm.response.json(); pm.expect(b).to.have.keys(\"completed\", \"questions\", \"percentage\", \"bestScore\", \"bestStreak\"); pm.expect(b.completed).to.be.at.least(1); pm.expect(b.questions).to.be.at.least(5); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stats/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stats",
+                "me"
+              ]
+            },
+            "description": "По завершённым партиям: сколько партий, сколько вопросов, % правильных, лучший счёт, лучшая серия.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.6 Статистика по категории",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Категория и процент\", function () { const b = pm.response.json(); pm.expect(b.category).to.eql(\"Arrays y objetos\"); pm.expect(b.total).to.be.at.least(5); pm.expect(b.percentage).to.eql(Math.floor(b.correct * 100 / b.total)); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/stats/me/categories/Arrays%20y%20objetos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "stats",
+                "me",
+                "categories",
+                "Arrays%20y%20objetos"
+              ]
+            },
+            "description": "Процент правильных ответов в одной категории (композиция функций из P1). Пробелы в адресе — %20.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.7 Рейтинг",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Позиции и порядок\", function () { const r = pm.response.json(); pm.expect(r).to.not.be.empty; pm.expect(r.length).to.be.at.most(10); r.forEach((x, i) => { pm.expect(x.position).to.eql(i + 1); if (i > 0) { const a = r[i-1]; pm.expect(a.score > x.score || (a.score === x.score && a.durationSec <= x.durationSec)).to.eql(true); } }); pm.expect(r[0]).to.have.property(\"username\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ranking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ranking"
+              ]
+            },
+            "description": "Топ-10 завершённых партий всех игроков: очки ↓, при равенстве — время ↑, затем дата ↑.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8.8 Рейтинг без токена",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Код ответа 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ranking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ranking"
+              ]
+            },
+            "description": "Без входа → 401.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
